@@ -1,0 +1,114 @@
+import requests # Using requests, we will send the get request to the prospect subdomain URLs and check if the subdomain for the domain exists or not
+
+import time
+
+import urllib3 # urllib3 is a powerful, user-friendly HTTP client for Python.
+
+import sys # This module provides access to some variables used or maintained by the interpreter and to functions that interact strongly with the interpreter.
+
+import argparse # The argparse module in Python helps create a program in a command-line-environment in a way that appears not only easy to code but also improves interaction. The argparse module also automatically generates help and usage messages and issues errors when users give the program invalid arguments.
+
+version = 2.2
+
+
+def parse_args():
+
+    parser = argparse.ArgumentParser() # initializes the parser so that can start to add custom arguments.
+
+    parser.add_argument('-d', '--domain', type=str, required=True, help='Target Domain') # used to specify which command-line options the program is willing to accept
+
+    parser.add_argument('-o', '--output', type=str, required=False, help='Output to file.')
+
+    return parser.parse_args()
+
+
+def banner(): # What we want to show up before the subdomains are listed
+
+    global version
+
+    print('Name: subdomain enumerator')
+
+    print(f'Version: {version}')
+
+    print('by Sivan Kark')
+
+    print('Description: For use of Cyberwise W22 class')
+
+    time.sleep(1)
+
+
+def parse_url(url): # This allows us to get components of any given URL by splitting it. It is also used to obtain any URL given base URL and relative path.
+
+
+    try: # try and except so system doesn't crash
+
+        host = urllib3.util.url.parse_url(url).host # will get the host name - the bit between www and .com
+
+    except Exception as e:
+
+        print('[*] Invalid domain, try again...')
+
+        sys.exit(1) # something has gone wrong so use sys.exit(1)
+
+    return host
+
+
+def write_subs_to_file(subdomain, output_file):
+
+    with open(output_file, 'a') as fp: # In order to read or write a file, we need first to open it. The 'a' opens the file for writing, its created if it doesnt exist. the data will be inserted at the end, after the existing data. With the “With” statement, you get better syntax and exceptions handling.
+
+        fp.write(subdomain + '\n') # So that the subdomains are easy to read, with a line between each one
+
+        fp.close()
+
+
+def main(): # main functions
+
+    banner() # run banner when program loads
+
+    subdomains = [] # make subdomains into a list
+
+    args = parse_args() # returning the domain and output (if output was entered)
+
+    target = parse_url(args.domain) # for parsing the url as explained above
+
+    output = args.output
+
+
+    req = requests.get(f"https://crt.sh/?q=%.{target}&output=json") # crt.sh is the certificate search website. The '%' means any character, so get the subdomains too.To get the json (java script object notation is a standardized format commonly used to transfer data as text that can be sent over a network.It represents objects as name/value pairs, just like a Python dictionary), add the part on the end
+
+
+    if req.status_code != 200: # this means it's not ok - The HTTP 200 OK success status response code indicates that the request has succeeded.
+
+        print('[*] Information not available!')
+
+        sys.exit(1)
+
+
+    for (key,value) in enumerate(req.json()): # Enumerate() method adds a counter to an iterable and returns it in a form of enumerating object.
+
+        subdomains.append(value['name_value']) # in the json data, it's like a dictionary, so getting the data like a key
+
+
+    print(f"\n[!] ****** TARGET: {target} ****** [!] \n")
+
+
+    subs = sorted(set(subdomains)) # to make it into a sorted set of subdomains
+
+
+    for s in subs:
+
+        print(f'[*] {s}\n') # to print each subdomain line by line
+
+        if output is not None: # The None keyword is used to define a null value, or no value at all.
+
+            write_subs_to_file(s, output)
+
+
+    print("\n\n[**] Subdomain_Scanner is complete, all subdomains have been found")
+
+
+if __name__ == '__main__':
+
+    main()
+
